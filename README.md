@@ -158,3 +158,78 @@ runs/
 5. Multi‑seed experiments
 6. Plot aggregated results
 
+
+
+---
+
+# Expected Diagnostics (How to Know the System Works)
+
+During training you will log several diagnostic variables into:
+
+runs/<run_dir>/train_monitor.csv
+
+The most important ones are:
+
+Variable | Meaning | Expected Behaviour
+--- | --- | ---
+ctx_id | Context / regime id | Should switch occasionally (Markov context switching)
+violation | Safety violation (collision) | Should decrease when safety mechanisms activate
+shield_used | Shield intervention | Should activate occasionally in risky states
+adj_risk | Adjustment-speed risk estimate | Between 0 and 1, spikes after context shifts
+adj_unsafe | Unsafe adaptation trigger | Turns 1 when environment changes faster than agent adapts
+
+---
+
+Typical diagnostic behaviour:
+
+1. Context Switching
+
+ctx_id changes occasionally:
+
+0 0 0 1 1 2 2 2 0 0
+
+This confirms the nonstationary environment is active.
+
+2. Adjustment-Speed Risk
+
+adj_risk spikes after distribution shifts:
+
+0.1 0.2 0.15 0.8 0.9 0.7 0.2
+
+This means the algorithm detected fast environment change.
+
+3. Unsafe Trigger
+
+adj_unsafe becomes 1 when
+
+S_env > S_agent + margin
+
+Example:
+
+0 0 0 1 1 0 0
+
+When this happens the system tightens safety constraints.
+
+4. Shield Usage
+
+shield_used should occasionally activate:
+
+0 0 0 1 0 0 1
+
+This means the safety shield prevented unsafe actions.
+
+---
+
+Live visualization:
+
+python -m scripts.plot_live_sanity --run_dir <run_dir>
+
+Panels show:
+1. Context switching
+2. Violation rate
+3. Adjustment risk
+4. Unsafe trigger
+
+If these signals behave as described above, your nonstationary safety system is working correctly.
+
+---
